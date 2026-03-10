@@ -1,0 +1,6 @@
+requests>=2.32
+pandas>=2.2
+SQLAlchemy>=2.0
+pyodbc>=5.1  # for Azure SQL via ODBC
+tenacity>=8.2  # retry/backoff
+python-dotenv>=1.0
