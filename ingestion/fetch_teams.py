@@ -1,9 +1,9 @@
 import pandas as pd
 from ingestion.utils import api_get, to_staging
-from ingestion.config import LEAGUE_ID, SEASON
+from ingestion.config import LEAGUES, SEASONS
 
 def run():
-    data = api_get("teams", params={"league": LEAGUE_ID, "season": SEASON})  # [1](https://www.api-football.com/documentation-v3)
+    data = api_get("teams", params={"league": LEAGUES, "season": SEASONS})  # [1](https://www.api-football.com/documentation-v3)
     rows = []
     for item in data.get("response", []):
         team = item.get("team", {}) or {}
