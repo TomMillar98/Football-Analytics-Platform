@@ -1,0 +1,38 @@
+name: Ingest Football Data
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # 04:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system deps (ODBC Driver 18)
+        run: |
+          sudo ACCEPT_EULA=Y apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y unixodbc unixodbc-dev
+
+      - name: Install Python deps
+        run: |
+          pip install -r ingestion/requirements.txt
+
+      - name: Configure env
+        run: |
+          echo "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }}" >> $GITHUB_ENV
+          echo "AZURE_SQL_CXN=${{ secrets.AZURE_SQL_CXN }}" >> $GITHUB_ENV
+          echo "LEAGUE_ID=39" >> $GITHUB_ENV
+          echo "SEASON=2024" >> $GITHUB_ENV
+          echo "API_BASE=https://v3.football.api-sports.io" >> $GITHUB_ENV
+
+      - name: Run daily ingest
+        run: |
+          python -m ingestion.daily_ingest
