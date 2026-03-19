@@ -1,18 +1,26 @@
-import pandas as pd
 from ingestion.utils import api_get, to_staging
 from ingestion.config import LEAGUES, SEASONS
+import pandas as pd
 
 def run():
-    data = api_get("teams", params={"league": LEAGUES, "season": SEASONS})  # [1](https://www.api-football.com/documentation-v3)
     rows = []
-    for item in data.get("response", []):
-        team = item.get("team", {}) or {}
-        rows.append({
-            "team_id": team.get("id"),
-            "team_name": team.get("name"),
-            "tla": team.get("code"),
-            "country": item.get("country", {}).get("name"),
-            "founded": team.get("founded"),
-        })
-    df = pd.DataFrame(rows).dropna(subset=["team_id"])
+
+    for league_id in LEAGUES:
+        for season in SEASONS:
+            data = api_get("teams", params={"league": league_id, "season": season})
+
+            for item in data.get("response", []):
+                team = item["team"]
+                rows.append({
+                    "team_id": team["id"],
+                    "name": team["name"],
+                    "short_name": team.get("code"),
+                    "country": item["country"]["name"],
+                    "founded": team.get("founded"),
+                    "comp_id": league_id,
+                    "season": season,
+                    "logo_url": team["logo"]
+                })
+
+    df = pd.DataFrame(rows)
     to_staging(df, "teams")
