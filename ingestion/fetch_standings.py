@@ -1,28 +1,31 @@
-import pandas as pd
 from ingestion.utils import api_get, to_staging
 from ingestion.config import LEAGUES, SEASONS
+import pandas as pd
 
 def run():
-    data = api_get("standings", params={"league": LEAGUES, "season": SEASONS})  # [1](https://www.api-football.com/documentation-v3)
     rows = []
-    for item in data.get("response", []):
-        comp_id = item["league"]["id"]
-        season = item["league"]["season"]
-        for table in item["league"]["standings"]:
-            for row in table:
-                team = row["team"]
-                rows.append({
-                    "comp_id": comp_id,
-                    "season": season,
-                    "team_id": team["id"],
-                    "position": row["rank"],
-                    "points": row["points"],
-                    "played": row["all"]["played"],
-                    "won": row["all"]["win"],
-                    "draw": row["all"]["draw"],
-                    "lost": row["all"]["lose"],
-                    "goals_for": row["all"]["goals"]["for"],
-                    "goals_against": row["all"]["goals"]["against"],
-                })
+
+    for league_id in LEAGUES:
+        for season in SEASONS:
+            data = api_get("standings", params={"league": league_id, "season": season})
+
+            for item in data.get("response", []):
+                standings = item["league"]["standings"][0]
+
+                for row in standings:
+                    rows.append({
+                        "comp_id": league_id,
+                        "season": season,
+                        "team_id": row["team"]["id"],
+                        "rank": row["rank"],
+                        "points": row["points"],
+                        "played": row["all"]["played"],
+                        "won": row["all"]["win"],
+                        "draw": row["all"]["draw"],
+                        "lost": row["all"]["lose"],
+                        "goals_for": row["all"]["goals"]["for"],
+                        "goals_against": row["all"]["goals"]["against"]
+                    })
+
     df = pd.DataFrame(rows)
     to_staging(df, "standings")
