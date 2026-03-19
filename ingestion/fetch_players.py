@@ -30,7 +30,13 @@ def run():
 
                 for item in response:
                     p = item["player"]
-                    s = item["statistics"][0]
+
+                    stats_list = item.get("statistics")
+                    if not stats_list or len(stats_list) == 0:
+                        # No usable stats - skip the player
+                        continue
+
+                    s = stats_list[0]
 
                     rows.append({
                         "player_id": p["id"],

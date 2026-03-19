@@ -11,11 +11,16 @@ def run():
 
             for item in data.get("response", []):
                 team = item["team"]
+
+                # some competitions return country=null or missing
+                country_obj = item.get("country") or {}
+                country_name = country_obj.get("name")
+
                 rows.append({
                     "team_id": team["id"],
                     "name": team["name"],
                     "short_name": team.get("code"),
-                    "country": item["country"]["name"],
+                    "country": country_name,
                     "founded": team.get("founded"),
                     "comp_id": league_id,
                     "season": season,

@@ -1,24 +1,38 @@
-from ingestion.utils import api_get, to_staging
-from ingestion.config import LEAGUES, SEASONS
-import pandas as pd
+import logging
+from datetime import datetime, UTC
 
-def run():
-    rows = []
+logger = logging.getLogger(__name__)
 
-    for league_id in LEAGUES:
-        for season in SEASONS:
-            data = api_get("injuries", params={"league": league_id, "season": season})
+def safe_get(d, *keys):
+    """Safely get nested dictionary values"""
+    for key in keys:
+        if not isinstance(d, dict):
+            return None
+        d = d.get(key)
+    return d
 
-            for item in data.get("response", []):
-                rows.append({
-                    "player_id": item["player"]["id"],
-                    "team_id": item["team"]["id"],
-                    "league_id": league_id,
-                    "season": season,
-                    "date": item["player"]["injury"]["date"],
-                    "type": item["player"]["injury"]["type"],
-                    "reason": item["player"]["injury"]["reason"]
-                })
 
-    df = pd.DataFrame(rows)
-    to_staging(df, "player_injuries")
+def run(api_response):
+    records = []
+
+    for i, item in enumerate(api_response):
+
+        try:
+            player = item.get("player", {})
+
+            record = {
+                "player_id": safe_get(player, "id"),
+                "name": safe_get(player, "name"),
+                "injury_date": safe_get(player, "injury", "date"),
+                "injury_type": safe_get(player, "injury", "type"),
+                "injury_reason": safe_get(player, "injury", "reason"),
+                "last_updated": datetime.now(UTC)
+            }
+
+            records.append(record)
+
+        except Exception as e:
+            logger.error(f"Error processing record {i}: {e}", exc_info=True)
+            continue  # 🔥 NEVER crash, just skip bad row
+
+    return records
