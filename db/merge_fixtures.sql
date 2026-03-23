@@ -5,7 +5,7 @@ USING (
         fixture_id,
         comp_id,
         season,
-        date_utc,
+        TRY_CONVERT(datetime2, date_utc) AS date_utc,
         status,
         round,
         home_team_id,
@@ -30,5 +30,8 @@ WHEN MATCHED THEN
         last_updated = SYSUTCDATETIME()
 
 WHEN NOT MATCHED THEN
-    INSERT (fixture_id, comp_id, season, date_utc, status, round, home_team_id, away_team_id, score_home, score_away, last_updated)
-    VALUES (src.fixture_id, src.comp_id, src.season, src.date_utc, src.status, src.round, src.home_team_id, src.away_team_id, src.score_home, src.score_away, SYSUTCDATETIME());
+    INSERT (fixture_id, comp_id, season, date_utc, status, round,
+            home_team_id, away_team_id, score_home, score_away, last_updated)
+    VALUES (src.fixture_id, src.comp_id, src.season, src.date_utc, src.status,
+            src.round, src.home_team_id, src.away_team_id,
+            src.score_home, src.score_away, SYSUTCDATETIME());
