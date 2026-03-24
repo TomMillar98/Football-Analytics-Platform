@@ -2,7 +2,33 @@
 MERGE dbo.fact_player_match AS tgt
 USING (
     SELECT *
-    FROM staging.player_match_stats
+    FROM (
+        SELECT
+            fixture_id,
+            player_id,
+            team_id,
+            minutes,
+            rating,
+            shots_total,
+            shots_on,
+            passes_total,
+            passes_accuracy,
+            duels_total,
+            duels_won,
+            dribbles_attempts,
+            dribbles_success,
+            tackles,
+            interceptions,
+            fouls_committed,
+            fouls_drawn,
+            saves,
+            ROW_NUMBER() OVER (
+                PARTITION BY fixture_id, player_id
+                ORDER BY minutes DESC, rating DESC
+            ) AS rn
+        FROM staging.player_match_stats
+    ) AS x
+    WHERE rn = 1
 ) AS src
 ON tgt.fixture_id = src.fixture_id
 AND tgt.player_id = src.player_id
@@ -24,16 +50,21 @@ WHEN MATCHED THEN
         interceptions = src.interceptions,
         fouls_committed = src.fouls_committed,
         fouls_drawn = src.fouls_drawn,
-        saves = src.saves
+        saves = src.saves,
+        last_updated = SYSUTCDATETIME()
 
 WHEN NOT MATCHED THEN
-    INSERT (fixture_id, player_id, team_id, minutes, rating,
-            shots_total, shots_on, passes_total, passes_accuracy,
-            duels_total, duels_won, dribbles_attempts, dribbles_success,
-            tackles, interceptions, fouls_committed, fouls_drawn, saves)
+    INSERT (
+        fixture_id, player_id, team_id, minutes, rating,
+        shots_total, shots_on, passes_total, passes_accuracy,
+        duels_total, duels_won, dribbles_attempts, dribbles_success,
+        tackles, interceptions, fouls_committed, fouls_drawn, saves,
+        last_updated
+    )
     VALUES (
         src.fixture_id, src.player_id, src.team_id, src.minutes, src.rating,
         src.shots_total, src.shots_on, src.passes_total, src.passes_accuracy,
         src.duels_total, src.duels_won, src.dribbles_attempts, src.dribbles_success,
-        src.tackles, src.interceptions, src.fouls_committed, src.fouls_drawn, src.saves
+        src.tackles, src.interceptions, src.fouls_committed, src.fouls_drawn, src.saves,
+        SYSUTCDATETIME()
     );
