@@ -1,11 +1,8 @@
-import time
-import traceback
-from datetime import datetime
-
 from ingestion.utils import engine
 from sqlalchemy import text
+from datetime import datetime
 
-# fetch models
+# modules
 from ingestion.fetch_leagues import run as fetch_leagues
 from ingestion.fetch_teams import run as fetch_teams
 from ingestion.fetch_players import run as fetch_players
@@ -17,7 +14,7 @@ from ingestion.fetch_player_lineups import run as fetch_player_lineups
 from ingestion.fetch_player_injuries import run as fetch_player_injuries
 from ingestion.fetch_transfers import run as fetch_transfers
 
-# for image uploading
+# upload
 from ingestion.upload_images import run as upload_images
 
 
@@ -26,18 +23,16 @@ def log(msg):
 
 
 def run_sql_scripts(script_paths):
-    """Execute SQL merge scripts in order."""
     with engine().begin() as conn:
         for path in script_paths:
             log(f"Running SQL: {path}")
             with open(path, "r", encoding="utf-8") as f:
-                sql_text = f.read()
-                conn.exec_driver_sql(sql_text)
+                conn.exec_driver_sql(f.read())
 
-# ingest raw data
+
 def main():
     start_time = datetime.utcnow()
-    log("Starting ingestion Pipeline")
+    log("Starting Full Ingestion Pipeline")
 
     try:
         log("Fetching league metadata...")
@@ -55,7 +50,7 @@ def main():
         log("Fetching standings...")
         fetch_standings()
 
-        log("Fetching player match statistics...")
+        log("Fetching player match stats...")
         fetch_player_match_stats()
 
         log("Fetching player events...")
@@ -70,7 +65,7 @@ def main():
         log("Fetching player transfers...")
         fetch_transfers()
 
-        # run merge scripts
+        # Merge
         merge_scripts = [
             "db/merge_leagues.sql",
             "db/merge_teams.sql",
@@ -86,21 +81,22 @@ def main():
 
         run_sql_scripts(merge_scripts)
 
-        # load in images
-        log("Uploading team, player and league images...")
-        upload_images()
+        # Was originally ingesting images but this is too much data, taking it directly from API but leaving here for future reference
+        # Images
+        #log("Uploading images...")
+        #upload_images()
 
-        log("Ingestion completed successfully")
+        log("Ingestion pipeline completed")
 
     except Exception as ex:
-        log("Error during ingestion")
+        log("ERROR DURING INGESTION")
         log(str(ex))
+        import traceback
         traceback.print_exc()
 
     finally:
         end_time = datetime.utcnow()
-        runtime = end_time - start_time
-        log(f"Runtime: {runtime}")
+        log(f"Total Runtime: {end_time - start_time}")
 
 
 if __name__ == "__main__":
