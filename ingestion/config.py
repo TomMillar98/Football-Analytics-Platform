@@ -36,7 +36,7 @@ LEAGUES = [
     1,4,5,2,3,848
 ]
 
-SEASONS = [2023]
+SEASONS = [2020]
 
 AZURE_SQL_CXN = os.getenv("AZURE_SQL_CXN")
 AZURE_BLOB_CXN = os.getenv("AZURE_BLOB_CXN")
